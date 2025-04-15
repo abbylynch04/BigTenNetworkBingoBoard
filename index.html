@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Big Ten Network Sports Bingo</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      padding: 10px;
+      background-color: #003366;
+      color: #ffffff;
+      margin: 0;
+    }
+
+    h1 {
+      color: #ffffff;
+      font-size: 1.8rem;
+      margin-top: 10px;
+    }
+
+    .board-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 100%;
+    }
+
+    canvas {
+      border: 1px solid #555;
+      background-color: #333333;
+      cursor: pointer;
+      margin-top: 15px;
+      touch-action: manipulation;
+    }
+
+    .win-message {
+      font-size: 1.3em;
+      color: #FFD700;
+      font-weight: bold;
+      display: none;
+      margin-top: 15px;
+      max-width: 90%;
+    }
+
+    #new-board {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background-color: #FFD700;
+      border: none;
+      color: #003366;
+      font-size: 1.1em;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+
+    #new-board:hover {
+      background-color: #FFA500;
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Big Ten Network Sports Bingo</h1>
+  <div class="board-container">
+    <canvas id="bingoCanvas"></canvas>
+    <button id="new-board">Generate New Bingo Board</button>
+  </div>
+  <div id="win-message" class="win-message">
+    WINNER!! Please show your winning Bingo Card to the Big Ten Network Marketing Table to claim your prize!
+  </div>
+
+  <script>
+    const phrases = [
+      "Someone spills a drink/snack", "Long line at the concession stand", "Seat neighbors high-five after a big play",
+      "Free t-shirt toss", "Overheard someone saying 'We got this'", "'Make some noise!' appears on the big screen",
+      "Camera crew moves through the crowd", "Fan brings a homemade sign", "Person wearing a full costume or crazy wig",
+      "Painted face in your row", "Chant starts from behind you", "Wave goes all the way around the stadium",
+      "Couple in matching team gear", "Kid in a mini jersey", "Someone booing loudly", "Someone yelling at the refs",
+      "TikTok-style dancing during a timeout", "Hearing someone yell at the ref", "Timeout called at a weird moment",
+      "Ref blows whistle and no one knows why", "Coach throws up their hands in disbelief", "Big play or performance",
+      "Fans jump up before the play is over", "Player dives or slides", "Refs huddle for a ruling", "Mascot walks through the stands",
+      "Halftime performer or pep band solos", "Fans shown on the video board", "Dance cam, kiss cam, or flex cam",
+      "Rally towels or thundersticks waving", "Pregame or halftime light show", "Organ or hype music blast", "Flashing lights",
+      "$15 food or drink item spotted", "Someone wearing a vintage jersey", "Fan holding 3 souvenir items", "Person takes a selfie",
+      "Catch someone filming on Snapchat/Instagram", "Jersey of a player no longer on the team", "Big Ten-branded merch in the crowd",
+      "Fans standing the whole time", "Someone sneaking into a better seat", "Photo op at a Big Ten promo station", "Team’s mascot hugs a fan",
+      "Player interacts with a fan", "T-shirt cannon or giveaway", "Timeout entertainment (e.g., mascot race)", "Pregame light show",
+      "National anthem", "Mascot on screen", "Fireworks or pyrotechnics", "Camera pans to a famous alum", "Home team wins", "Big Ten Conference Game"
+    ];
+
+    const canvas = document.getElementById("bingoCanvas");
+    const ctx = canvas.getContext("2d");
+    const boardSize = 5;
+    const padding = 10;
+    let cellSize, fontSize, lineHeight;
+    let markedCells = [];
+    let currentPhrases = [];
+
+    function resizeCanvas() {
+      const maxWidth = Math.min(window.innerWidth - 20, 500);
+      canvas.width = maxWidth;
+      canvas.height = maxWidth;
+      cellSize = canvas.width / boardSize;
+      fontSize = cellSize / 7;
+      lineHeight = fontSize * 1.2;
+      drawBoard();
+    }
+
+    function shuffle(array) {
+      return array.sort(() => Math.random() - 0.5);
+    }
+
+    function wrapText(text, maxWidth) {
+      const words = text.split(' ');
+      let lines = [], currentLine = "";
+      words.forEach(word => {
+        const testLine = currentLine + word + " ";
+        const testWidth = ctx.measureText(testLine).width;
+        if (testWidth > maxWidth && currentLine.length > 0) {
+          lines.push(currentLine);
+          currentLine = word + " ";
+        } else {
+          currentLine = testLine;
+        }
+      });
+      lines.push(currentLine);
+      return lines;
+    }
+
+    function drawBoard(highlightedCells = []) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.font = `${fontSize}px 'Segoe UI', sans-serif`;
+
+      for (let row = 0; row < boardSize; row++) {
+        for (let col = 0; col < boardSize; col++) {
+          const index = row * boardSize + col;
+          const phrase = currentPhrases[index];
+          const x = col * cellSize;
+          const y = row * cellSize;
+          const isMarked = markedCells.some(cell => cell.row === row && cell.col === col);
+          const isHighlighted = highlightedCells.some(cell => cell.row === row && cell.col === col);
+
+          ctx.strokeStyle = "#555";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x, y, cellSize, cellSize);
+
+          if (isHighlighted) {
+            ctx.fillStyle = "#32CD32";
+          } else if (isMarked) {
+            ctx.fillStyle = "#1E90FF";
+          } else {
+            ctx.fillStyle = phrase === "FREE" ? "#00BFFF" : "#4A4A4A";
+          }
+          ctx.fillRect(x, y, cellSize, cellSize);
+
+          ctx.fillStyle = "#ffffff";
+          ctx.font = (isMarked || isHighlighted ? "bold" : "normal") + ` ${fontSize}px 'Segoe UI'`;
+
+          const wrapped = wrapText(phrase, cellSize - 10);
+          const textY = y + (cellSize - wrapped.length * lineHeight) / 2;
+
+          wrapped.forEach((line, i) => {
+            ctx.fillText(line.trim(), x + cellSize / 2, textY + i * lineHeight);
+          });
+        }
+      }
+    }
+
+    function checkWin() {
+      for (let i = 0; i < boardSize; i++) {
+        const row = Array.from({ length: boardSize }, (_, col) => ({ row: i, col }));
+        const col = Array.from({ length: boardSize }, (_, row) => ({ row, col: i }));
+        if (row.every(cell => markedCells.some(m => m.row === cell.row && m.col === cell.col))) return showWin(row);
+        if (col.every(cell => markedCells.some(m => m.row === cell.row && m.col === cell.col))) return showWin(col);
+      }
+      const diag1 = Array.from({ length: boardSize }, (_, i) => ({ row: i, col: i }));
+      const diag2 = Array.from({ length: boardSize }, (_, i) => ({ row: i, col: boardSize - 1 - i }));
+      if (diag1.every(cell => markedCells.some(m => m.row === cell.row && m.col === cell.col))) return showWin(diag1);
+      if (diag2.every(cell => markedCells.some(m => m.row === cell.row && m.col === cell.col))) return showWin(diag2);
+
+      document.getElementById("win-message").style.display = 'none';
+      drawBoard();
+    }
+
+    function showWin(cells) {
+      document.getElementById("win-message").style.display = 'block';
+      drawBoard(cells);
+    }
+
+    canvas.addEventListener("click", function (event) {
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      const col = Math.floor(x / cellSize);
+      const row = Math.floor(y / cellSize);
+
+      if (row < 0 || row >= boardSize || col < 0 || col >= boardSize) return;
+      if (row === 2 && col === 2) return;
+
+      const index = markedCells.findIndex(c => c.row === row && c.col === col);
+      if (index > -1) {
+        markedCells.splice(index, 1);
+      } else {
+        markedCells.push({ row, col });
+      }
+      checkWin();
+    });
+
+    function generateBoard() {
+      const shuffled = shuffle([...phrases]).slice(0, 24);
+      shuffled.splice(12, 0, "FREE");
+      currentPhrases = shuffled;
+      markedCells = [{ row: 2, col: 2 }];
+      document.getElementById("win-message").style.display = 'none';
+      resizeCanvas();
+    }
+
+    document.getElementById("new-board").addEventListener("click", generateBoard);
+    window.addEventListener("resize", resizeCanvas);
+
+    generateBoard();
+  </script>
+</body>
+</html>
